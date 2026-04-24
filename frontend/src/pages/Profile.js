@@ -167,7 +167,7 @@ const Profile = () => {
               <div style={styles.detailRow}>
                 <span style={styles.detailLabel}>Bio</span>
                 <span style={{ ...styles.detailValue, color: form.bio ? 'var(--text-dark)' : 'var(--text-light)', fontStyle: form.bio ? 'normal' : 'italic' }}>
-                  {form.bio || 'No bio yet — click Edit to add one'}
+                  {form.bio || 'No bio yet - click Edit to add one'}
                 </span>
               </div>
             </div>

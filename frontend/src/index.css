@@ -369,7 +369,7 @@ a { text-decoration: none; color: inherit; }
 
 .ornamental-border::before,
 .ornamental-border::after {
-  content: '✦';
+  content: '*';
   position: absolute;
   color: var(--gold);
   font-size: 0.7rem;

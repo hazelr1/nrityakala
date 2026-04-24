@@ -19,7 +19,7 @@ const Navbar = () => {
           <div className="navbar-logo">
             Nritya<span>Kala</span>
           </div>
-          <div className="navbar-tagline">नृत्यकला • Art of Dance</div>
+          <div className="navbar-tagline">NrityaKala - Art of Dance</div>
         </div>
       </div>
 

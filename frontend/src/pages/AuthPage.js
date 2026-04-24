@@ -37,13 +37,14 @@ const AuthPage = ({ mode = 'login' }) => {
       <div style={styles.bgPattern} />
       <div style={styles.card}>
         <div style={styles.header}>
+          <div style={styles.logo}>NK</div>
           <h1 style={styles.title}>NrityaKala</h1>
           <p style={styles.subtitle}>{isRegister ? 'Begin your journey into classical mudras' : 'Welcome back, dancer'}</p>
         </div>
 
         <div className="divider">
           <div className="divider-line" />
-          <span className="divider-ornament">•</span>
+          <span className="divider-ornament">*</span>
           <div className="divider-line" />
         </div>
 

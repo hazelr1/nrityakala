@@ -50,7 +50,7 @@ const Dashboard = () => {
       <div className="container">
         <div className="page-header">
           <h1>Dashboard</h1>
-          <p>Welcome back, {user?.name} — keep dancing!</p>
+          <p>Welcome back, {user?.name} - keep dancing!</p>
         </div>
 
         {/* Stats row */}
@@ -76,7 +76,8 @@ const Dashboard = () => {
 
         {stats?.totalSessions === 0 ? (
           <div className="card" style={{ textAlign: 'center', padding: '60px', marginTop: '24px' }}>
-            <h3 style={{ marginBottom: '8px' }}>No Sessions Yet</h3>
+            <div style={{ fontSize: '1rem', marginBottom: '16px' }}>NRITYAKALA</div>
+            <h3 style={{ marginBottom: '8px' }}>No sessions yet</h3>
             <p style={{ color: 'var(--text-light)', marginBottom: '24px' }}>
               Start your first practice session to see your progress here.
             </p>

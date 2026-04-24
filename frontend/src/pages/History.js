@@ -45,7 +45,8 @@ const History = () => {
           </div>
         ) : history.length === 0 ? (
           <div className="card" style={{ textAlign: 'center', padding: '60px' }}>
-            <h3>No Practice History Yet</h3>
+            <div style={{ fontSize: '1rem', marginBottom: '12px' }}>HISTORY</div>
+            <h3>No practice history yet</h3>
             <p style={{ color: 'var(--text-light)', marginTop: '8px' }}>
               Complete a practice session to see your results here.
             </p>
@@ -90,7 +91,7 @@ const History = () => {
                         </span>
                       </td>
                       <td style={{ ...styles.td, color: 'var(--text-light)' }}>
-                        {log.duration > 0 ? `${log.duration}s` : '—'}
+                        {log.duration > 0 ? `${log.duration}s` : 'N/A'}
                       </td>
                     </tr>
                   ))}
@@ -102,7 +103,7 @@ const History = () => {
               <div style={styles.pagination}>
                 <button className="btn btn-secondary" style={{ padding: '8px 20px' }}
                   onClick={() => setPage(p => p - 1)} disabled={page === 1}>
-                  Previous
+                  Prev
                 </button>
                 <span style={{ color: 'var(--text-mid)', fontSize: '0.9rem' }}>
                   Page {page} of {totalPages}

@@ -3,17 +3,17 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 const features = [
-  { icon: '', title: 'Learn Mudras', desc: 'Explore the ancient vocabulary of hand gestures from Indian classical dance traditions.' },
-  { icon: '', title: 'AI Detection', desc: 'Practice in real-time with webcam-based hand tracking powered by MediaPipe.' },
-  { icon: '', title: 'Track Progress', desc: 'Monitor your accuracy and session history to improve your mudra mastery.' },
-  { icon: '', title: 'Classical Traditions', desc: 'Study mudras from Bharatanatyam, Kathak, Odissi and other classical dance forms.' }
+  { icon: 'Learn', title: 'Learn Mudras', desc: 'Explore the ancient vocabulary of hand gestures from Indian classical dance traditions.' },
+  { icon: 'AI', title: 'AI Detection', desc: 'Practice in real-time with webcam-based hand tracking powered by MediaPipe.' },
+  { icon: 'Track', title: 'Track Progress', desc: 'Monitor your accuracy and session history to improve your mudra mastery.' },
+  { icon: 'Classical', title: 'Classical Traditions', desc: 'Study mudras from Bharatanatyam, Kathak, Odissi and other classical dance forms.' }
 ];
 
 const mudraShowcase = [
-  { name: 'Pataka', meaning: 'The Flag' },
-  { name: 'Alapadma', meaning: 'Bloomed Lotus' },
-  { name: 'Mushti', meaning: 'The Fist' },
-  { name: 'Shikara', meaning: 'The Peak' },
+  { name: 'Pataka', meaning: 'The Flag', emoji: 'PAT' },
+  { name: 'Alapadma', meaning: 'Bloomed Lotus', emoji: 'ALA' },
+  { name: 'Mushti', meaning: 'The Fist', emoji: 'MUS' },
+  { name: 'Shikara', meaning: 'The Peak', emoji: 'SHI' },
 ];
 
 const Home = () => {
@@ -28,11 +28,11 @@ const Home = () => {
         <div className="container" style={{ position: 'relative', zIndex: 1 }}>
           <div style={styles.heroContent}>
             <div style={styles.heroTag}>
-              <span style={styles.tagOm}>ॐ</span>
+              <span style={styles.tagOm}>NK</span>
               <span style={styles.tagText}>Indian Classical Dance</span>
             </div>
             <h1 style={styles.heroTitle}>
-              नृत्यकला
+              NrityaKala
               <br />
               <span style={styles.heroSubtitle}>Master the Sacred Art of</span>
               <br />
@@ -64,6 +64,7 @@ const Home = () => {
           <div style={styles.mudraCards}>
             {mudraShowcase.map((m, i) => (
               <div key={m.name} style={{ ...styles.mudraCard, animationDelay: `${i * 0.1}s` }}>
+                <div style={styles.mudraEmoji}>{m.emoji}</div>
                 <div style={styles.mudraCardName}>{m.name}</div>
                 <div style={styles.mudraCardMeaning}>{m.meaning}</div>
               </div>
@@ -111,7 +112,7 @@ const Home = () => {
       {/* Footer */}
       <footer style={styles.footer}>
         <p style={{ color: 'var(--text-light)', fontSize: '0.85rem' }}>
-          NrityaKala — Preserving the Sacred Language of Hands
+          NrityaKala - Preserving the Sacred Language of Hands
         </p>
       </footer>
     </div>

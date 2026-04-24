@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { getMudras, savePracticeLog } from '../utils/api';
 import { classifyMudra, getAccuracyScore } from '../utils/mudraDetector';
 
@@ -8,7 +8,23 @@ const Practice = () => {
   const canvasRef = useRef(null);
   const handsRef = useRef(null);
   const cameraRef = useRef(null);
-  const sessionRef = useRef({ results: [], startTime: null });
+
+  // Stores aggregated results per mudra for the current run
+  // {
+  //   [mudraId]: {
+  //     mudraId, mudraName,
+  //     results: [{score, correct, detected}],
+  //     startTimeMs,
+  //     lastSwitchTimeMs,
+  //     durationSec
+  //   }
+  // }
+  const sessionByMudraRef = useRef({});
+  const currentMudraIdRef = useRef(null);
+
+  // Keep latest selected mudra + isActive without causing onResults to change
+  const selectedMudraRef = useRef(null);
+  const isActiveRef = useRef(false);
 
   const [mudras, setMudras] = useState([]);
   const [selectedMudra, setSelectedMudra] = useState(null);
@@ -23,26 +39,40 @@ const Practice = () => {
   const [error, setError] = useState('');
 
   const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
+
+  // Keep refs updated
+  useEffect(() => {
+    selectedMudraRef.current = selectedMudra;
+  }, [selectedMudra]);
+
+  useEffect(() => {
+    isActiveRef.current = isActive;
+  }, [isActive]);
 
   // Load mudras
   useEffect(() => {
-    getMudras().then(res => {
-      setMudras(res.data);
-      const mudraId = searchParams.get('mudra');
-      if (mudraId) {
-        const found = res.data.find(m => m._id === mudraId);
-        if (found) setSelectedMudra(found);
-      }
-    }).catch(console.error).finally(() => setLoading(false));
+    getMudras()
+      .then((res) => {
+        setMudras(res.data);
+        const mudraId = searchParams.get('mudra');
+        if (mudraId) {
+          const found = res.data.find((m) => m._id === mudraId);
+          if (found) setSelectedMudra(found);
+        }
+      })
+      .catch(console.error)
+      .finally(() => setLoading(false));
   }, [searchParams]);
 
+  // Mirror landmarks to match mirrored video
   const drawLandmarks = useCallback((ctx, landmarks, width, height) => {
-    // Draw connections
+    const mx = (x) => (1 - x) * width;
+    const my = (y) => y * height;
+
     const connections = [
-      [0,1],[1,2],[2,3],[3,4],
-      [0,5],[5,6],[6,7],[7,8],
-      [5,9],[9,10],[10,11],[11,12],
+      [0, 1],[1, 2],[2, 3],[3, 4],
+      [0, 5],[5, 6],[6, 7],[7, 8],
+      [5, 9],[9,10],[10,11],[11,12],
       [9,13],[13,14],[14,15],[15,16],
       [13,17],[17,18],[18,19],[19,20],
       [0,17]
@@ -50,30 +80,72 @@ const Practice = () => {
 
     ctx.strokeStyle = 'rgba(200,151,42,0.7)';
     ctx.lineWidth = 2;
+
     connections.forEach(([a, b]) => {
-      // Flip x coordinates since canvas is already flipped
-      const x1 = (1 - landmarks[a].x) * width;
-      const y1 = landmarks[a].y * height;
-      const x2 = (1 - landmarks[b].x) * width;
-      const y2 = landmarks[b].y * height;
-      
       ctx.beginPath();
-      ctx.moveTo(x1, y1);
-      ctx.lineTo(x2, y2);
+      ctx.moveTo(mx(landmarks[a].x), my(landmarks[a].y));
+      ctx.lineTo(mx(landmarks[b].x), my(landmarks[b].y));
       ctx.stroke();
     });
 
-    // Draw dots
     landmarks.forEach((lm, i) => {
-      const x = (1 - lm.x) * width;
-      const y = lm.y * height;
       ctx.beginPath();
-      ctx.arc(x, y, i === 0 ? 6 : 4, 0, 2 * Math.PI);
-      ctx.fillStyle = i === 0 ? '#E8640C' : '#E8B84B';
+      ctx.arc(mx(lm.x), my(lm.y), i === 0 ? 6 : 4, 0, 2 * Math.PI);
+      ctx.fillStyle = i === 0 ? 'var(--saffron)' : 'var(--gold-light)';
       ctx.fill();
     });
   }, []);
 
+  // Ensure the per-mudra bucket exists; also handles duration tracking when switching
+  const ensureMudraBucket = useCallback((mudra) => {
+    if (!mudra?._id) return null;
+
+    const map = sessionByMudraRef.current;
+    if (!map[mudra._id]) {
+      map[mudra._id] = {
+        mudraId: mudra._id,
+        mudraName: mudra.name,
+        results: [],
+        startTimeMs: Date.now(),
+        lastSwitchTimeMs: Date.now(),
+        durationSec: 0
+      };
+    }
+    return map[mudra._id];
+  }, []);
+
+  // When selectedMudra changes during an active session, update duration buckets
+  useEffect(() => {
+    if (!isActive) {
+      // If not active, just set current
+      currentMudraIdRef.current = selectedMudra?._id || null;
+      return;
+    }
+
+    const now = Date.now();
+    const prevId = currentMudraIdRef.current;
+    const nextId = selectedMudra?._id || null;
+
+    // Close out duration on previous mudra
+    if (prevId && sessionByMudraRef.current[prevId]) {
+      const prev = sessionByMudraRef.current[prevId];
+      const deltaSec = Math.max(0, Math.round((now - (prev.lastSwitchTimeMs || now)) / 1000));
+      prev.durationSec += deltaSec;
+    }
+
+    // Start duration tracking for new mudra
+    if (selectedMudra) {
+      const next = ensureMudraBucket(selectedMudra);
+      if (next) next.lastSwitchTimeMs = now;
+    }
+
+    currentMudraIdRef.current = nextId;
+    // Reset per-frame stats when switching (optional but feels better UX)
+    setSessionStats({ correct: 0, total: 0 });
+    setSaved(false);
+  }, [selectedMudra, isActive, ensureMudraBucket]);
+
+  // IMPORTANT: stable onResults (does NOT depend on selectedMudra/isActive)
   const onResults = useCallback((results) => {
     const canvas = canvasRef.current;
     const video = videoRef.current;
@@ -83,7 +155,7 @@ const Practice = () => {
     canvas.width = video.videoWidth || 640;
     canvas.height = video.videoHeight || 480;
 
-    // Flip for mirror effect
+    // Draw the frame mirrored
     ctx.save();
     ctx.scale(-1, 1);
     ctx.translate(-canvas.width, 0);
@@ -97,31 +169,40 @@ const Practice = () => {
       const detected = classifyMudra(landmarks);
       setDetectedMudra(detected);
 
-      if (selectedMudra && isActive) {
-        const score = getAccuracyScore(detected.name, selectedMudra.name, detected.confidence);
-        const correct = detected.name === selectedMudra.name;
+      const currentSelected = selectedMudraRef.current;
+      const active = isActiveRef.current;
+
+      if (currentSelected && active) {
+        // Make sure bucket exists (especially if user starts then selects quickly)
+        ensureMudraBucket(currentSelected);
+
+        const score = getAccuracyScore(detected.name, currentSelected.name, detected.confidence);
+        const correct = detected.name === currentSelected.name;
+
         setAccuracy(score);
         setFeedback(correct ? 'correct' : 'incorrect');
-        
-        // Only update stats if detection confidence is high enough
-        if (score > 0) {
-          setSessionStats(prev => ({
-            correct: prev.correct + (correct ? 1 : 0),
-            total: prev.total + 1
-          }));
-          sessionRef.current.results.push({ score, correct, detected: detected.name });
-        }
+
+        setSessionStats((prev) => ({
+          correct: prev.correct + (correct ? 1 : 0),
+          total: prev.total + 1
+        }));
+
+        // Store per-mudra
+        const bucket = sessionByMudraRef.current[currentSelected._id];
+        if (bucket) bucket.results.push({ score, correct, detected: detected.name });
       }
     } else {
       setDetectedMudra(null);
       setFeedback('neutral');
       setAccuracy(0);
     }
-  }, [selectedMudra, isActive, drawLandmarks]);
+  }, [drawLandmarks, ensureMudraBucket]);
 
   const startCamera = useCallback(async () => {
     setMpLoading(true);
     setError('');
+    setSaved(false);
+
     try {
       const { Hands } = window;
       const { Camera } = window;
@@ -130,6 +211,16 @@ const Practice = () => {
         setError('MediaPipe not loaded. Please check your internet connection and refresh.');
         setMpLoading(false);
         return;
+      }
+
+      // Reset session
+      sessionByMudraRef.current = {};
+      currentMudraIdRef.current = selectedMudraRef.current?._id || null;
+      setSessionStats({ correct: 0, total: 0 });
+
+      // Initialize bucket for starting mudra
+      if (selectedMudraRef.current) {
+        ensureMudraBucket(selectedMudraRef.current);
       }
 
       const hands = new Hands({
@@ -148,7 +239,7 @@ const Practice = () => {
 
       const camera = new Camera(videoRef.current, {
         onFrame: async () => {
-          if (handsRef.current) {
+          if (handsRef.current && videoRef.current) {
             await handsRef.current.send({ image: videoRef.current });
           }
         },
@@ -158,71 +249,101 @@ const Practice = () => {
 
       await camera.start();
       cameraRef.current = camera;
-      sessionRef.current = { results: [], startTime: Date.now() };
+
       setIsActive(true);
-      setSessionStats({ correct: 0, total: 0 });
-      setSaved(false);
+      setFeedback('neutral');
+      setAccuracy(0);
     } catch (err) {
       setError('Could not access webcam. Please grant camera permission.');
       console.error(err);
     } finally {
       setMpLoading(false);
     }
-  }, [onResults]);
+  }, [onResults, ensureMudraBucket]);
 
   const stopCamera = useCallback(async () => {
+    // Stop streams first to prevent send() while closing
     if (cameraRef.current) {
-      cameraRef.current.stop();
+      try { cameraRef.current.stop(); } catch {}
       cameraRef.current = null;
     }
     if (handsRef.current) {
-      await handsRef.current.close();
+      try { await handsRef.current.close(); } catch {}
       handsRef.current = null;
     }
+
+    // finalize duration for currently selected mudra
+    const now = Date.now();
+    const currentId = currentMudraIdRef.current;
+    if (currentId && sessionByMudraRef.current[currentId]) {
+      const current = sessionByMudraRef.current[currentId];
+      const deltaSec = Math.max(0, Math.round((now - (current.lastSwitchTimeMs || now)) / 1000));
+      current.durationSec += deltaSec;
+    }
+
     setIsActive(false);
     setFeedback('neutral');
 
-    // Save session if we have data and a selected mudra
-    if (selectedMudra && sessionRef.current.results.length > 0) {
-      const results = sessionRef.current.results;
-      const avgScore = Math.round(results.reduce((s, r) => s + r.score, 0) / results.length);
-      const correctCount = results.filter(r => r.correct).length;
-      const lastDetected = results[results.length - 1]?.detected || 'Unknown';
-      const duration = Math.round((Date.now() - sessionRef.current.startTime) / 1000);
+    const sessions = Object.values(sessionByMudraRef.current);
 
-      try {
+    // Save one log per mudra that actually has results
+    const toSave = sessions.filter((s) => s.results && s.results.length > 0);
+
+    if (toSave.length === 0) {
+      setSaved(false);
+      return;
+    }
+
+    try {
+      // Save sequentially (simple + reliable)
+      for (const s of toSave) {
+        const avgScore = Math.round(s.results.reduce((sum, r) => sum + r.score, 0) / s.results.length);
+        const correctCount = s.results.filter((r) => r.correct).length;
+        const lastDetected = s.results[s.results.length - 1]?.detected || 'Unknown';
+
         await savePracticeLog({
-          mudraId: selectedMudra._id,
-          mudraName: selectedMudra.name,
+          mudraId: s.mudraId,
+          mudraName: s.mudraName,
           detectedMudra: lastDetected,
           accuracyScore: avgScore,
-          isCorrect: correctCount > results.length / 2,
-          duration
+          isCorrect: correctCount > s.results.length / 2,
+          duration: s.durationSec || 0
         });
-        setSaved(true);
-      } catch (err) {
-        console.error('Failed to save session:', err);
       }
+
+      setSaved(true);
+    } catch (err) {
+      console.error('Failed to save session:', err);
     }
-  }, [selectedMudra]);
+  }, []);
 
   // Cleanup on unmount
   useEffect(() => {
-    return () => { stopCamera(); };
-  }, [stopCamera]);
-
-  // Update onResults when mudra changes
-  useEffect(() => {
-    if (handsRef.current) {
-      handsRef.current.onResults(onResults);
-    }
-  }, [onResults]);
+    return () => {
+      // best-effort cleanup
+      (async () => {
+        if (cameraRef.current) {
+          try { cameraRef.current.stop(); } catch {}
+          cameraRef.current = null;
+        }
+        if (handsRef.current) {
+          try { await handsRef.current.close(); } catch {}
+          handsRef.current = null;
+        }
+      })();
+    };
+  }, []);
 
   const overallAccuracy = sessionStats.total > 0
     ? Math.round((sessionStats.correct / sessionStats.total) * 100)
     : 0;
 
-  const feedbackBorderClass = feedback === 'correct' ? 'feedback-correct' : feedback === 'incorrect' ? 'feedback-incorrect' : 'feedback-neutral';
+  const feedbackBorderClass =
+    feedback === 'correct'
+      ? 'feedback-correct'
+      : feedback === 'incorrect'
+        ? 'feedback-incorrect'
+        : 'feedback-neutral';
 
   return (
     <div className="page-container" style={{ background: 'linear-gradient(180deg, var(--brown-dark) 0%, var(--cream) 40%)' }}>
@@ -231,14 +352,6 @@ const Practice = () => {
           <h1 style={{ color: 'var(--gold-light)' }}>Practice Studio</h1>
           <p style={{ color: 'rgba(253,246,236,0.7)' }}>Position your hand in frame and perform the mudra</p>
         </div>
-
-        {/* Load MediaPipe scripts */}
-        {!window.Hands && (
-          <>
-            <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossOrigin="anonymous" async />
-            <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossOrigin="anonymous" async />
-          </>
-        )}
 
         <div style={styles.layout}>
           {/* Left: mudra selector */}
@@ -250,13 +363,17 @@ const Practice = () => {
                   {mudras.map(m => (
                     <button
                       key={m._id}
-                      disabled={isActive}
-                      onClick={() => setSelectedMudra(m)}
+                      disabled={mpLoading} // allow switching even while active
+                      onClick={() => {
+                        setSelectedMudra(m);
+                        setSaved(false);
+                      }}
                       style={{
                         ...styles.mudraOption,
                         background: selectedMudra?._id === m._id ? 'rgba(232,100,12,0.1)' : 'transparent',
                         borderColor: selectedMudra?._id === m._id ? 'var(--saffron)' : 'var(--border)',
-                        color: selectedMudra?._id === m._id ? 'var(--saffron-dark)' : 'var(--text-dark)'
+                        color: selectedMudra?._id === m._id ? 'var(--saffron-dark)' : 'var(--text-dark)',
+                        opacity: mpLoading ? 0.6 : 1
                       }}
                     >
                       <span style={{ fontWeight: 600 }}>{m.name}</span>
@@ -279,8 +396,16 @@ const Practice = () => {
                 </div>
                 <div style={{ ...styles.howToBox }}>
                   <div style={styles.instrLabel}>How to form</div>
-                  <p style={{ fontSize: '0.85rem', color: 'var(--text-mid)', lineHeight: 1.6 }}>{selectedMudra.howToForm}</p>
+                  <p style={{ fontSize: '0.85rem', color: 'var(--text-mid)', lineHeight: 1.6 }}>
+                    {selectedMudra.howToForm}
+                  </p>
                 </div>
+
+                {isActive && (
+                  <p style={{ marginTop: 10, fontSize: '0.78rem', color: 'var(--text-light)' }}>
+                    Tip: You can switch mudras anytime—results will be saved per mudra when you stop.
+                  </p>
+                )}
               </div>
             )}
           </div>
@@ -295,8 +420,9 @@ const Practice = () => {
 
               {!isActive && (
                 <div style={styles.webcamOverlay}>
+                  <div style={{ fontSize: '1rem', marginBottom: '16px' }}>CAMERA</div>
                   <p style={{ color: 'var(--cream)', fontFamily: 'Cormorant Garamond, serif', fontSize: '1.1rem' }}>
-                    Camera Inactive
+                    Camera inactive
                   </p>
                   <p style={{ color: 'rgba(253,246,236,0.6)', fontSize: '0.85rem', marginTop: '8px' }}>
                     Select a mudra and press Start
@@ -322,7 +448,7 @@ const Practice = () => {
                   onClick={stopCamera}
                   style={{ flex: 1 }}
                 >
-                  Stop & Save
+                  Stop and Save
                 </button>
               )}
             </div>
@@ -344,7 +470,7 @@ const Practice = () => {
 
               <div style={styles.feedbackRow}>
                 <span style={styles.feedbackLabel}>Expected</span>
-                <span style={styles.expectedMudra}>{selectedMudra?.name || '—'}</span>
+                <span style={styles.expectedMudra}>{selectedMudra?.name || 'N/A'}</span>
               </div>
 
               <div style={styles.feedbackRow}>
@@ -353,15 +479,17 @@ const Practice = () => {
                   ...styles.detectedMudra,
                   color: detectedMudra?.name === selectedMudra?.name ? 'var(--success)' : 'var(--crimson)'
                 }}>
-                  {detectedMudra?.name || '—'}
+                  {detectedMudra?.name || 'N/A'}
                 </span>
               </div>
 
               {isActive && detectedMudra && (
                 <div style={{ marginTop: '12px', textAlign: 'center' }}>
-                  <span className={`badge ${feedback === 'correct' ? 'badge-correct' : 'badge-incorrect'}`}
-                    style={{ fontSize: '0.85rem', padding: '6px 20px' }}>
-                    {feedback === 'correct' ? 'Correct!' : 'Incorrect'}
+                  <span
+                    className={`badge ${feedback === 'correct' ? 'badge-correct' : 'badge-incorrect'}`}
+                    style={{ fontSize: '0.85rem', padding: '6px 20px' }}
+                  >
+                    {feedback === 'correct' ? 'Correct' : 'Incorrect'}
                   </span>
                 </div>
               )}
@@ -377,7 +505,10 @@ const Practice = () => {
                 <svg viewBox="0 0 80 80" style={{ width: 80, height: 80 }}>
                   <circle cx="40" cy="40" r="34" fill="none" stroke="var(--border)" strokeWidth="6" />
                   <circle
-                    cx="40" cy="40" r="34" fill="none"
+                    cx="40"
+                    cy="40"
+                    r="34"
+                    fill="none"
                     stroke={overallAccuracy >= 70 ? '#2E7D32' : overallAccuracy >= 40 ? 'var(--saffron)' : '#C62828'}
                     strokeWidth="6"
                     strokeLinecap="round"
@@ -419,24 +550,6 @@ const Practice = () => {
           </div>
         </div>
       </div>
-
-      {/* Load MediaPipe from CDN */}
-      <script
-        dangerouslySetInnerHTML={{
-          __html: `
-            if (!window.Hands) {
-              var s1 = document.createElement('script');
-              s1.src = 'https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js';
-              s1.crossOrigin = 'anonymous';
-              document.head.appendChild(s1);
-              var s2 = document.createElement('script');
-              s2.src = 'https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js';
-              s2.crossOrigin = 'anonymous';
-              document.head.appendChild(s2);
-            }
-          `
-        }}
-      />
     </div>
   );
 };
@@ -495,7 +608,8 @@ const styles = {
   },
   canvas: {
     position: 'absolute',
-    top: 0, left: 0,
+    top: 0,
+    left: 0,
     width: '100%',
     height: '100%'
   },

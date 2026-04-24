@@ -1,119 +1,103 @@
-const mongoose = require('mongoose');
 const dotenv = require('dotenv');
-dotenv.config();
-
+const mongoose = require('mongoose');
 const Mudra = require('../models/Mudra');
+
+dotenv.config();
 
 const mudras = [
   {
     name: 'Pataka',
     sanskritName: 'पताका',
-    description: 'The Flag mudra — one of the most fundamental mudras in Bharatanatyam. Represents a flag, clouds, forest, and many more elements.',
-    howToForm: 'All four fingers are held straight and together, thumb bent inward across the palm. The hand resembles a flat flag.',
-    meaning: 'Flag, cloud, forest, river, cutting, wind, forbidden, blessing',
     category: 'Asamyuta',
     difficulty: 'Beginner',
-    imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/4c/Pataka.jpg/200px-Pataka.jpg',
-    fingerPattern: { thumb: 'bent', index: 'straight', middle: 'straight', ring: 'straight', pinky: 'straight' }
+    description: 'A foundational single-hand gesture used widely in Bharatanatyam and other styles.',
+    howToForm: 'Extend all four fingers together. Keep the thumb slightly bent and touching the side of the index finger.',
+    meaning: 'Flag, clouds, forest, blessing (contextual)'
   },
   {
     name: 'Tripataka',
     sanskritName: 'त्रिपताका',
-    description: 'The Three Parts of a Flag mudra. Derived from Pataka but with the ring finger bent. Used to represent a crown, tree, or marriage ceremony.',
-    howToForm: 'Similar to Pataka but with the ring finger bent at the middle joint while other fingers remain straight.',
-    meaning: 'Crown, three, tree, marriage, lightning, arrow',
-    category: 'Asamyuta',
-    difficulty: 'Beginner',
-    imageUrl: '',
-    fingerPattern: { thumb: 'bent', index: 'straight', middle: 'straight', ring: 'bent', pinky: 'straight' }
-  },
-  {
-    name: 'Alapadma',
-    sanskritName: 'अलापद्म',
-    description: 'The Fully Bloomed Lotus mudra. All five fingers are spread open and slightly curved, representing a fully bloomed lotus flower.',
-    howToForm: 'Spread all five fingers apart, curve them slightly and fan them out like a blooming lotus.',
-    meaning: 'Lotus in full bloom, beauty, the moon, wheel, universe',
-    category: 'Asamyuta',
-    difficulty: 'Beginner',
-    imageUrl: '',
-    fingerPattern: { thumb: 'spread', index: 'spread', middle: 'spread', ring: 'spread', pinky: 'spread' }
-  },
-  {
-    name: 'Ardhachandra',
-    sanskritName: 'अर्धचन्द्र',
-    description: 'The Half Moon mudra. The thumb is stretched out at a right angle while other fingers are held straight and together.',
-    howToForm: 'Extend the thumb perpendicular to the palm while keeping all four fingers straight and together.',
-    meaning: 'Half moon, prayer, waist, spear, beginning of meditation',
-    category: 'Asamyuta',
-    difficulty: 'Beginner',
-    imageUrl: '',
-    fingerPattern: { thumb: 'extended', index: 'straight', middle: 'straight', ring: 'straight', pinky: 'straight' }
-  },
-  {
-    name: 'Mayura',
-    sanskritName: 'मयूर',
-    description: 'The Peacock mudra. The thumb and index finger touch at the tips, while the other three fingers are held up representing a peacock\'s beak.',
-    howToForm: 'Touch the tip of the thumb to the tip of the index finger. The middle, ring, and pinky fingers are raised and slightly curved.',
-    meaning: 'Peacock, applying tilak, vomiting, stroking hair',
     category: 'Asamyuta',
     difficulty: 'Intermediate',
-    imageUrl: '',
-    fingerPattern: { thumb: 'tip_touch_index', index: 'tip_touch_thumb', middle: 'straight', ring: 'straight', pinky: 'straight' }
-  },
-  {
-    name: 'Shikara',
-    sanskritName: 'शिखर',
-    description: 'The Peak or Spire mudra. The thumb points upward while all other fingers are curled into a fist. Represents a mountain peak.',
-    howToForm: 'Make a fist with all four fingers, then extend the thumb straight up.',
-    meaning: 'Peak, spire, husband, silence, love, pillar, bow',
-    category: 'Asamyuta',
-    difficulty: 'Beginner',
-    imageUrl: '',
-    fingerPattern: { thumb: 'straight_up', index: 'bent', middle: 'bent', ring: 'bent', pinky: 'bent' }
+    description: 'Variation of Pataka with the ring finger bent.',
+    howToForm: 'Form Pataka, then bend the ring finger at the middle joint. Keep the other fingers extended.',
+    meaning: 'Crown, tree, arrow, lamp (contextual)'
   },
   {
     name: 'Mushti',
     sanskritName: 'मुष्टि',
-    description: 'The Fist mudra. All fingers are curled into the palm forming a fist, with the thumb placed over the ring and middle fingers.',
-    howToForm: 'Curl all four fingers into the palm, then place the thumb over the ring and middle fingers.',
-    meaning: 'Fist, grasping, steadfastness, wrestling, holding a sword',
     category: 'Asamyuta',
     difficulty: 'Beginner',
-    imageUrl: '',
-    fingerPattern: { thumb: 'over_fingers', index: 'bent', middle: 'bent', ring: 'bent', pinky: 'bent' }
+    description: 'Closed fist gesture.',
+    howToForm: 'Curl all fingers into the palm to form a fist. Keep the thumb folded naturally.',
+    meaning: 'Strength, holding, anger (contextual)'
+  },
+  {
+    name: 'Shikara',
+    sanskritName: 'शिखर',
+    category: 'Asamyuta',
+    difficulty: 'Beginner',
+    description: 'Thumb extended upward with a closed fist.',
+    howToForm: 'Make a fist and extend the thumb upward like a peak.',
+    meaning: 'Bow, pillar, assurance (contextual)'
+  },
+  {
+    name: 'Ardhachandra',
+    sanskritName: 'अर्धचन्द्र',
+    category: 'Asamyuta',
+    difficulty: 'Intermediate',
+    description: 'Open palm with thumb extended outward.',
+    howToForm: 'Extend all fingers together and stretch the thumb sideways away from the palm.',
+    meaning: 'Half-moon, knife, offering (contextual)'
+  },
+  {
+    name: 'Alapadma',
+    sanskritName: 'आलपद्म',
+    category: 'Asamyuta',
+    difficulty: 'Intermediate',
+    description: 'Lotus-like open palm with fingers spread.',
+    howToForm: 'Open the palm and spread all fingers gracefully, like a blooming lotus.',
+    meaning: 'Lotus, beauty, full moon (contextual)'
+  },
+  {
+    name: 'Mayura',
+    sanskritName: 'मयूर',
+    category: 'Asamyuta',
+    difficulty: 'Advanced',
+    description: 'Peacock gesture used for delicate expressions.',
+    howToForm: 'Bring the thumb and ring finger together. Keep other fingers extended and relaxed.',
+    meaning: 'Peacock, writing, ornament (contextual)'
   },
   {
     name: 'Katakamukha',
     sanskritName: 'कटकमुख',
-    description: 'The Opening of a Bracelet mudra. Used in many contexts including garland picking, pulling arrows, and graceful movements.',
-    howToForm: 'The index and middle fingers are bent towards the thumb tip. The ring and pinky fingers are extended.',
-    meaning: 'Bracelet, pulling a bow, plucking flowers, conversation',
     category: 'Asamyuta',
-    difficulty: 'Intermediate',
-    imageUrl: '',
-    fingerPattern: { thumb: 'curved', index: 'curved', middle: 'curved', ring: 'straight', pinky: 'straight' }
+    difficulty: 'Advanced',
+    description: 'Used to hold flowers, ornaments, or to show gentle grasping.',
+    howToForm: 'Bring index, middle, and ring fingers toward the thumb as if pinching, keep pinky slightly extended.',
+    meaning: 'Holding, garland, plucking flowers (contextual)'
   }
 ];
 
-async function seedDB() {
-  try {
-    await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/nrityakala');
-    console.log('✅ Connected to MongoDB');
-
-    await Mudra.deleteMany({});
-    console.log('🗑️  Cleared existing mudras');
-
-    const inserted = await Mudra.insertMany(mudras);
-    console.log(`🌱 Seeded ${inserted.length} mudras successfully!`);
-
-    inserted.forEach(m => console.log(`  ✓ ${m.name} (${m.difficulty})`));
-
-    await mongoose.disconnect();
-    console.log('✅ Done! Database seeded.');
-  } catch (err) {
-    console.error('❌ Seed failed:', err);
+async function run() {
+  if (!process.env.MONGO_URI) {
+    console.error('Missing MONGO_URI in backend .env');
     process.exit(1);
   }
+
+  await mongoose.connect(process.env.MONGO_URI);
+  console.log('Connected. Seeding mudras...');
+
+  for (const m of mudras) {
+    await Mudra.updateOne({ name: m.name }, { $set: m }, { upsert: true });
+  }
+
+  console.log('Seed complete.');
+  await mongoose.disconnect();
+  process.exit(0);
 }
 
-seedDB();
+run().catch((e) => {
+  console.error(e);
+  process.exit(1);
+});

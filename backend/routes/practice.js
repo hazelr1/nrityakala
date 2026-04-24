@@ -1,106 +1,101 @@
 const express = require('express');
-const router = express.Router();
+const auth = require('../middleware/auth');
 const PracticeLog = require('../models/PracticeLog');
-const { protect } = require('../middleware/auth');
 
-// POST /api/practice - save a practice result
-router.post('/', protect, async (req, res) => {
+const router = express.Router();
+
+// Save a practice log
+router.post('/', auth, async (req, res, next) => {
   try {
     const { mudraId, mudraName, detectedMudra, accuracyScore, isCorrect, duration } = req.body;
 
-    if (!mudraId || !mudraName) {
-      return res.status(400).json({ message: 'mudraId and mudraName are required' });
-    }
+    if (!mudraId || !mudraName) return res.status(400).json({ message: 'mudraId and mudraName are required' });
 
     const log = await PracticeLog.create({
-      userId: req.user._id,
+      user: req.user._id,
       mudraId,
       mudraName,
       detectedMudra: detectedMudra || 'Unknown',
-      accuracyScore: accuracyScore || 0,
-      isCorrect: isCorrect || false,
-      duration: duration || 0
+      accuracyScore: Number.isFinite(accuracyScore) ? accuracyScore : 0,
+      isCorrect: !!isCorrect,
+      duration: Number.isFinite(duration) ? duration : 0,
+      timestamp: new Date()
     });
 
     res.status(201).json(log);
-  } catch (error) {
-    res.status(500).json({ message: 'Server error', error: error.message });
-  }
+  } catch (e) { next(e); }
 });
 
-// GET /api/practice/history - get user's practice history
-router.get('/history', protect, async (req, res) => {
+// Paginated history
+router.get('/history', auth, async (req, res, next) => {
   try {
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 20;
+    const page = Math.max(parseInt(req.query.page || '1', 10), 1);
+    const limit = 10;
     const skip = (page - 1) * limit;
 
-    const logs = await PracticeLog.find({ userId: req.user._id })
-      .sort({ timestamp: -1 })
-      .skip(skip)
-      .limit(limit);
+    const [logs, total] = await Promise.all([
+      PracticeLog.find({ user: req.user._id })
+        .sort({ timestamp: -1 })
+        .skip(skip)
+        .limit(limit),
+      PracticeLog.countDocuments({ user: req.user._id })
+    ]);
 
-    const total = await PracticeLog.countDocuments({ userId: req.user._id });
-
-    res.json({ logs, total, page, pages: Math.ceil(total / limit) });
-  } catch (error) {
-    res.status(500).json({ message: 'Server error', error: error.message });
-  }
+    const pages = Math.max(Math.ceil(total / limit), 1);
+    res.json({ logs, page, pages, total });
+  } catch (e) { next(e); }
 });
 
-// GET /api/practice/stats - get aggregated stats
-router.get('/stats', protect, async (req, res) => {
+// Stats
+router.get('/stats', auth, async (req, res, next) => {
   try {
     const userId = req.user._id;
 
-    const totalSessions = await PracticeLog.countDocuments({ userId });
-
-    const aggResult = await PracticeLog.aggregate([
-      { $match: { userId } },
+    const [totals] = await PracticeLog.aggregate([
+      { $match: { user: userId } },
       {
         $group: {
           _id: null,
+          totalSessions: { $sum: 1 },
           avgAccuracy: { $avg: '$accuracyScore' },
           totalCorrect: { $sum: { $cond: ['$isCorrect', 1, 0] } }
         }
       }
     ]);
 
-    const avgAccuracy = aggResult.length > 0 ? Math.round(aggResult[0].avgAccuracy) : 0;
-    const totalCorrect = aggResult.length > 0 ? aggResult[0].totalCorrect : 0;
-
-    // Recent 7 days trend
-    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    // last 7 days trend
     const trend = await PracticeLog.aggregate([
-      { $match: { userId, timestamp: { $gte: sevenDaysAgo } } },
+      { $match: { user: userId, timestamp: { $gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) } } },
       {
         $group: {
           _id: { $dateToString: { format: '%Y-%m-%d', date: '$timestamp' } },
-          avgAccuracy: { $avg: '$accuracyScore' },
-          count: { $sum: 1 }
+          count: { $sum: 1 },
+          avgAccuracy: { $avg: '$accuracyScore' }
         }
       },
       { $sort: { _id: 1 } }
     ]);
 
-    // Per-mudra breakdown
     const mudraBreakdown = await PracticeLog.aggregate([
-      { $match: { userId } },
+      { $match: { user: userId } },
       {
         $group: {
           _id: '$mudraName',
-          avgAccuracy: { $avg: '$accuracyScore' },
-          count: { $sum: 1 }
+          count: { $sum: 1 },
+          avgAccuracy: { $avg: '$accuracyScore' }
         }
       },
-      { $sort: { count: -1 } },
-      { $limit: 5 }
+      { $sort: { count: -1 } }
     ]);
 
-    res.json({ totalSessions, avgAccuracy, totalCorrect, trend, mudraBreakdown });
-  } catch (error) {
-    res.status(500).json({ message: 'Server error', error: error.message });
-  }
+    res.json({
+      totalSessions: totals?.totalSessions || 0,
+      avgAccuracy: Math.round(totals?.avgAccuracy || 0),
+      totalCorrect: totals?.totalCorrect || 0,
+      trend,
+      mudraBreakdown
+    });
+  } catch (e) { next(e); }
 });
 
 module.exports = router;

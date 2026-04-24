@@ -1,49 +1,17 @@
 const mongoose = require('mongoose');
 
-const practiceLogSchema = new mongoose.Schema({
-  userId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true
-  },
-  mudraId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Mudra',
-    required: true
-  },
-  mudraName: {
-    type: String,
-    required: true
-  },
-  detectedMudra: {
-    type: String,
-    default: 'Unknown'
-  },
-  accuracyScore: {
-    type: Number,
-    min: 0,
-    max: 100,
-    default: 0
-  },
-  isCorrect: {
-    type: Boolean,
-    default: false
-  },
-  duration: {
-    type: Number, // seconds
-    default: 0
-  },
-  timestamp: {
-    type: Date,
-    default: Date.now
-  }
-});
+const PracticeLogSchema = new mongoose.Schema({
+  user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
 
-// Virtual for formatted date
-practiceLogSchema.virtual('formattedDate').get(function () {
-  return this.timestamp.toLocaleDateString('en-IN', {
-    year: 'numeric', month: 'short', day: 'numeric'
-  });
-});
+  mudraId: { type: mongoose.Schema.Types.ObjectId, ref: 'Mudra', required: true },
+  mudraName: { type: String, required: true },
 
-module.exports = mongoose.model('PracticeLog', practiceLogSchema);
+  detectedMudra: { type: String, default: 'Unknown' },
+  accuracyScore: { type: Number, min: 0, max: 100, default: 0 },
+  isCorrect: { type: Boolean, default: false },
+  duration: { type: Number, default: 0 }, // seconds
+
+  timestamp: { type: Date, default: Date.now }
+}, { timestamps: true });
+
+module.exports = mongoose.model('PracticeLog', PracticeLogSchema);

@@ -1,17 +1,14 @@
 {
   "name": "nrityakala",
   "version": "1.0.0",
-  "description": "NrityaKala - Indian Classical Dance Mudra Learning Platform",
+  "private": true,
   "scripts": {
-    "install:all": "npm run install:backend && npm run install:frontend",
-    "install:backend": "cd backend && npm install",
-    "install:frontend": "cd frontend && npm install",
-    "dev:backend": "cd backend && npm run dev",
-    "dev:frontend": "cd frontend && npm start",
-    "seed": "cd backend && npm run seed",
-    "start": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\""
+    "dev": "npm-run-all -p dev:backend dev:frontend",
+    "dev:backend": "npm --prefix backend run dev",
+    "dev:frontend": "npm --prefix frontend start",
+    "seed": "npm --prefix backend run seed"
   },
   "devDependencies": {
-    "concurrently": "^8.2.2"
+    "npm-run-all": "^4.1.5"
   }
 }

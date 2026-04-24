@@ -1,94 +1,50 @@
 const express = require('express');
-const router = express.Router();
+const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
-const { protect } = require('../middleware/auth');
+const auth = require('../middleware/auth');
 
-const generateToken = (id) => {
-  return jwt.sign({ id }, process.env.JWT_SECRET || 'fallback_secret', {
-    expiresIn: '7d'
-  });
-};
+const router = express.Router();
 
-// POST /api/auth/register
-router.post('/register', async (req, res) => {
+function signToken(userId) {
+  return jwt.sign({ sub: userId }, process.env.JWT_SECRET, { expiresIn: '7d' });
+}
+
+router.post('/register', async (req, res, next) => {
   try {
     const { name, email, password } = req.body;
+    if (!name || !email || !password) return res.status(400).json({ message: 'All fields are required' });
+    if (password.length < 6) return res.status(400).json({ message: 'Password must be at least 6 characters' });
 
-    if (!name || !email || !password) {
-      return res.status(400).json({ message: 'All fields are required' });
-    }
+    const existing = await User.findOne({ email: email.toLowerCase() });
+    if (existing) return res.status(409).json({ message: 'Email already in use' });
 
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
-      return res.status(400).json({ message: 'Email already registered' });
-    }
+    const passwordHash = await bcrypt.hash(password, 10);
+    const user = await User.create({ name, email: email.toLowerCase(), passwordHash });
 
-    const user = await User.create({ name, email, password });
-    const token = generateToken(user._id);
-
-    res.status(201).json({
-      token,
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        level: user.level,
-        bio: user.bio
-      }
-    });
-  } catch (error) {
-    res.status(500).json({ message: 'Server error', error: error.message });
-  }
+    const token = signToken(user._id.toString());
+    res.json({ token, user: { _id: user._id, name: user.name, email: user.email, bio: user.bio, level: user.level } });
+  } catch (e) { next(e); }
 });
 
-// POST /api/auth/login
-router.post('/login', async (req, res) => {
+router.post('/login', async (req, res, next) => {
   try {
     const { email, password } = req.body;
+    if (!email || !password) return res.status(400).json({ message: 'Email and password are required' });
 
-    if (!email || !password) {
-      return res.status(400).json({ message: 'Email and password are required' });
-    }
+    const user = await User.findOne({ email: email.toLowerCase() });
+    if (!user) return res.status(401).json({ message: 'Invalid credentials' });
 
-    const user = await User.findOne({ email }).select('+password');
-    if (!user) {
-      return res.status(401).json({ message: 'Invalid credentials' });
-    }
+    const ok = await bcrypt.compare(password, user.passwordHash);
+    if (!ok) return res.status(401).json({ message: 'Invalid credentials' });
 
-    const isMatch = await user.comparePassword(password);
-    if (!isMatch) {
-      return res.status(401).json({ message: 'Invalid credentials' });
-    }
-
-    const token = generateToken(user._id);
-
-    res.json({
-      token,
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        level: user.level,
-        bio: user.bio
-      }
-    });
-  } catch (error) {
-    res.status(500).json({ message: 'Server error', error: error.message });
-  }
+    const token = signToken(user._id.toString());
+    res.json({ token, user: { _id: user._id, name: user.name, email: user.email, bio: user.bio, level: user.level } });
+  } catch (e) { next(e); }
 });
 
-// GET /api/auth/me
-router.get('/me', protect, async (req, res) => {
-  res.json({
-    user: {
-      id: req.user._id,
-      name: req.user.name,
-      email: req.user.email,
-      level: req.user.level,
-      bio: req.user.bio
-    }
-  });
+router.get('/me', auth, async (req, res) => {
+  res.json({ user: req.user });
 });
 
 module.exports = router;

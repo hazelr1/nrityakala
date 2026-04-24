@@ -1,41 +1,52 @@
 const express = require('express');
-const mongoose = require('mongoose');
 const cors = require('cors');
+const morgan = require('morgan');
 const dotenv = require('dotenv');
+const mongoose = require('mongoose');
 
 dotenv.config();
 
+const authRoutes = require('./routes/auth');
+const mudraRoutes = require('./routes/mudras');
+const practiceRoutes = require('./routes/practice');
+const userRoutes = require('./routes/user');
+
 const app = express();
 
-// Middleware
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
-  credentials: true
+  origin: process.env.CLIENT_ORIGIN || 'http://localhost:3000',
+  credentials: false
 }));
-app.use(express.json());
+app.use(express.json({ limit: '1mb' }));
+app.use(morgan('dev'));
 
-// Routes
-app.use('/api/auth', require('./routes/auth'));
-app.use('/api/mudras', require('./routes/mudras'));
-app.use('/api/practice', require('./routes/practice'));
-app.use('/api/user', require('./routes/user'));
+app.get('/health', (req, res) => res.json({ ok: true, service: 'nrityakala-backend' }));
 
-// Health check
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'NrityaKala API is running' });
+app.use('/api/auth', authRoutes);
+app.use('/api/mudras', mudraRoutes);
+app.use('/api/practice', practiceRoutes);
+app.use('/api/user', userRoutes);
+
+// Basic error handler
+app.use((err, req, res, next) => {
+  console.error(err);
+  res.status(err.status || 500).json({ message: err.message || 'Server error' });
 });
 
-// Connect to MongoDB and start server
 const PORT = process.env.PORT || 5000;
+const MONGO_URI = process.env.MONGO_URI;
 
-mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/nrityakala')
+if (!MONGO_URI) {
+  console.error('Missing MONGO_URI in backend .env');
+  process.exit(1);
+}
+
+mongoose.connect(MONGO_URI)
   .then(() => {
-    console.log('[OK] MongoDB connected');
-    app.listen(PORT, () => {
-      console.log(`[READY] Server running on port ${PORT}`);
-    });
+    console.log('MongoDB connected');
+    app.listen(PORT, () => console.log(`Backend running on http://localhost:${PORT}`));
   })
-  .catch((err) => {
-    console.error('[ERROR] MongoDB connection failed:', err.message);
+  .catch((e) => {
+    console.error('MongoDB connection error:', e.message);
     process.exit(1);
   });
