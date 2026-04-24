@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#2C1A0E" />
+    <meta name="description" content="NrityaKala - Learn and practice Indian classical dance mudras with AI detection" />
+    <title>NrityaKala — Art of Dance</title>
+
+    <!-- MediaPipe CDN - loaded early for availability -->
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+
+    <style>
+      body { margin: 0; background: #FDF6EC; }
+      #root { min-height: 100vh; }
+
+      @keyframes fadeUp {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+    </style>
+  </head>
+  <body>
+    <noscript>You need to enable JavaScript to run NrityaKala.</noscript>
+    <div id="root"></div>
+  </body>
+</html>

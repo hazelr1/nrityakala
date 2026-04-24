@@ -1,0 +1,394 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap');
+
+:root {
+  --saffron: #E8640C;
+  --saffron-light: #F4894A;
+  --saffron-dark: #B84D00;
+  --gold: #C8972A;
+  --gold-light: #E8B84B;
+  --crimson: #9B2335;
+  --cream: #FDF6EC;
+  --cream-dark: #F5E8D0;
+  --brown-dark: #2C1A0E;
+  --brown: #4A2C17;
+  --brown-mid: #7B4F2E;
+  --text-dark: #1A0E06;
+  --text-mid: #5C3D1E;
+  --text-light: #9B7B5A;
+  --border: rgba(200, 151, 42, 0.3);
+  --shadow: rgba(44, 26, 14, 0.15);
+  --success: #2E7D32;
+  --error: #C62828;
+  --card-bg: rgba(255, 252, 245, 0.95);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background-color: var(--cream);
+  color: var(--text-dark);
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+h1, h2, h3 {
+  font-family: 'Playfair Display', serif;
+  color: var(--brown-dark);
+}
+
+h4, h5, h6 {
+  font-family: 'Cormorant Garamond', serif;
+  color: var(--brown);
+}
+
+a { text-decoration: none; color: inherit; }
+
+/* Layout */
+.page-container {
+  min-height: 100vh;
+  padding-top: 72px;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+/* Navbar */
+.navbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  background: rgba(44, 26, 14, 0.97);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(200, 151, 42, 0.4);
+  padding: 0 32px;
+  height: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.navbar-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.navbar-logo {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--gold-light);
+  letter-spacing: 0.02em;
+}
+
+.navbar-logo span {
+  color: var(--saffron-light);
+}
+
+.navbar-tagline {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 0.75rem;
+  color: rgba(200, 151, 42, 0.7);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+.navbar-links {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.nav-link {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.875rem;
+  font-weight: 400;
+  color: rgba(253, 246, 236, 0.8);
+  padding: 8px 16px;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  letter-spacing: 0.01em;
+}
+
+.nav-link:hover, .nav-link.active {
+  color: var(--gold-light);
+  background: rgba(200, 151, 42, 0.1);
+}
+
+.nav-btn {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--brown-dark);
+  background: linear-gradient(135deg, var(--gold-light), var(--gold));
+  padding: 8px 20px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.nav-btn:hover {
+  background: linear-gradient(135deg, var(--saffron-light), var(--saffron));
+  color: white;
+  transform: translateY(-1px);
+}
+
+/* Buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 28px;
+  border-radius: 8px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+  letter-spacing: 0.01em;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--saffron), var(--saffron-dark));
+  color: white;
+  box-shadow: 0 4px 15px rgba(232, 100, 12, 0.3);
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(232, 100, 12, 0.4);
+}
+
+.btn-secondary {
+  background: transparent;
+  color: var(--saffron);
+  border: 1.5px solid var(--saffron);
+}
+
+.btn-secondary:hover {
+  background: rgba(232, 100, 12, 0.08);
+}
+
+.btn-gold {
+  background: linear-gradient(135deg, var(--gold-light), var(--gold));
+  color: var(--brown-dark);
+  box-shadow: 0 4px 15px rgba(200, 151, 42, 0.25);
+}
+
+.btn-gold:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(200, 151, 42, 0.35);
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Cards */
+.card {
+  background: var(--card-bg);
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  box-shadow: 0 4px 24px var(--shadow);
+  padding: 24px;
+  transition: all 0.2s ease;
+}
+
+.card:hover {
+  box-shadow: 0 8px 32px var(--shadow);
+  transform: translateY(-2px);
+}
+
+/* Form Elements */
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-label {
+  display: block;
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--text-mid);
+  margin-bottom: 6px;
+  letter-spacing: 0.02em;
+}
+
+.form-input {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.9rem;
+  color: var(--text-dark);
+  background: white;
+  transition: all 0.2s ease;
+  outline: none;
+}
+
+.form-input:focus {
+  border-color: var(--saffron);
+  box-shadow: 0 0 0 3px rgba(232, 100, 12, 0.12);
+}
+
+/* Status badges */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.badge-beginner { background: rgba(46, 125, 50, 0.12); color: #2E7D32; }
+.badge-intermediate { background: rgba(232, 100, 12, 0.12); color: var(--saffron-dark); }
+.badge-advanced { background: rgba(155, 35, 53, 0.12); color: var(--crimson); }
+.badge-correct { background: rgba(46, 125, 50, 0.15); color: #2E7D32; }
+.badge-incorrect { background: rgba(198, 40, 40, 0.15); color: #C62828; }
+
+/* Page headers */
+.page-header {
+  text-align: center;
+  padding: 48px 0 32px;
+}
+
+.page-header h1 {
+  font-size: 2.5rem;
+  background: linear-gradient(135deg, var(--saffron), var(--gold));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 8px;
+}
+
+.page-header p {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.15rem;
+  color: var(--text-light);
+  font-style: italic;
+}
+
+/* Decorative divider */
+.divider {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin: 16px 0;
+}
+
+.divider-line {
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+.divider-ornament {
+  color: var(--gold);
+  font-size: 1rem;
+}
+
+/* Overlay/Modal */
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(44, 26, 14, 0.7);
+  backdrop-filter: blur(4px);
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+/* Error/Success messages */
+.alert {
+  padding: 12px 16px;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  margin-bottom: 16px;
+}
+
+.alert-error {
+  background: rgba(198, 40, 40, 0.1);
+  border: 1px solid rgba(198, 40, 40, 0.3);
+  color: #C62828;
+}
+
+.alert-success {
+  background: rgba(46, 125, 50, 0.1);
+  border: 1px solid rgba(46, 125, 50, 0.3);
+  color: #2E7D32;
+}
+
+/* Loading */
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--border);
+  border-top-color: var(--saffron);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .navbar { padding: 0 16px; }
+  .container { padding: 0 16px; }
+  .page-header h1 { font-size: 1.8rem; }
+  .navbar-tagline { display: none; }
+}
+
+/* Ornamental border */
+.ornamental-border {
+  position: relative;
+  padding: 4px;
+}
+
+.ornamental-border::before,
+.ornamental-border::after {
+  content: '✦';
+  position: absolute;
+  color: var(--gold);
+  font-size: 0.7rem;
+}
+
+.ornamental-border::before { top: 0; left: 0; }
+.ornamental-border::after { bottom: 0; right: 0; }
+
+/* Webcam feedback colors */
+.feedback-correct {
+  border: 3px solid #2E7D32 !important;
+  box-shadow: 0 0 20px rgba(46, 125, 50, 0.4) !important;
+}
+
+.feedback-incorrect {
+  border: 3px solid #C62828 !important;
+  box-shadow: 0 0 20px rgba(198, 40, 40, 0.3) !important;
+}
+
+.feedback-neutral {
+  border: 3px solid var(--gold) !important;
+}
